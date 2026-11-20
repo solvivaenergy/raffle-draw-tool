@@ -1079,19 +1079,24 @@
     var c = $('lv-confetti'); if (!c) return;
     if (!CONF.ctx) CONF.ctx = c.getContext('2d');
     var colors = ['#d2ff1e', '#d2ff1e', '#ffffff', '#50890a', '#00a7ea', '#eaf5dc'];
-    function burst(n, sMin, sMax) {
+    // Slow-motion burst: about a third of the old gravity and gentler launch speeds, so the explosion
+    // unfolds over roughly a second and a half and the pieces drift down for five to six seconds.
+    // Lower drag lets them travel further, and the four origins across the stage spread the shower.
+    function burst(n, sMin, sMax, ox, oy) {
       for (var i = 0; i < n; i++) {
         var a = Math.random() * Math.PI * 2, s = sMin + Math.random() * (sMax - sMin);
         CONF.parts.push({
-          x: 960, y: 540, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 7, g: 0.32 + Math.random() * 0.14, drag: 0.986,
-          w: 8 + Math.random() * 10, h: 5 + Math.random() * 6, rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
-          color: colors[Math.floor(Math.random() * colors.length)], life: 0, ttl: 170 + Math.random() * 70,
+          x: ox, y: oy, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 3, g: 0.10 + Math.random() * 0.05, drag: 0.992,
+          w: 8 + Math.random() * 10, h: 5 + Math.random() * 6, rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.2,
+          color: colors[Math.floor(Math.random() * colors.length)], life: 0, ttl: 320 + Math.random() * 100,
           shape: Math.random() < 0.3 ? 'dot' : 'strip'
         });
       }
     }
-    burst(260, 10, 26);
-    setTimeout(function () { burst(140, 6, 18); }, 220);
+    burst(220, 7, 17, 960, 540);
+    setTimeout(function () { burst(120, 5, 13, 520, 620); }, 160);
+    setTimeout(function () { burst(120, 5, 13, 1400, 620); }, 320);
+    setTimeout(function () { burst(100, 4, 10, 960, 560); }, 520);
     function step() {
       var ctx = CONF.ctx, alive = [];
       ctx.clearRect(0, 0, 1920, 1080);
@@ -1099,10 +1104,10 @@
         var p = CONF.parts[i]; p.life++;
         p.vx *= p.drag; p.vy = p.vy * p.drag + p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
         if (p.life >= p.ttl || p.y > 1120) continue;
-        var fade = p.life > p.ttl - 40 ? Math.max(0, (p.ttl - p.life) / 40) : 1;
+        var fade = p.life > p.ttl - 60 ? Math.max(0, (p.ttl - p.life) / 60) : 1;
         ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
         if (p.shape === 'dot') { ctx.beginPath(); ctx.arc(0, 0, p.w / 2.6, 0, Math.PI * 2); ctx.fill(); }
-        else { var hh = p.h * (0.55 + 0.45 * Math.abs(Math.cos(p.life / 7))); ctx.fillRect(-p.w / 2, -hh / 2, p.w, hh); }
+        else { var hh = p.h * (0.55 + 0.45 * Math.abs(Math.cos(p.life / 9))); ctx.fillRect(-p.w / 2, -hh / 2, p.w, hh); }
         ctx.restore();
         alive.push(p);
       }
