@@ -4,6 +4,16 @@ The electronic raffle tool for the Solviva Power Up Raffle Promo (Oct 2026 to Ja
 One HTML file, no server. It runs in Chrome or Edge on the operator's laptop and is
 screen-shared on the Zoom webinar.
 
+## Hosted copy (nothing to download)
+
+**https://solvivaenergy.github.io/raffle-draw-tool/** is this same tool served from GitHub
+Pages. Open it in Chrome or Edge, click **Open live view** for the window to share in Zoom
+(or open the same address with `#live` at the end). The entry list you load never leaves
+your browser; the page only serves the tool itself. The session is remembered per browser,
+so run the real draw on the laptop you rehearsed on.
+
+The hand-over below is for running it from a local folder instead, which also works offline.
+
 ## Hand-over: running it on your own laptop
 
 Nothing to install. You need Chrome or Edge and this folder, unzipped, kept together. Internet
