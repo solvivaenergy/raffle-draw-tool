@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Power Up Raffle Draw Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<!-- SheetJS lets the tool read .xlsx directly. If it fails to load (no internet), save the list as .csv instead. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #f3f6f3; --card: #ffffff; --line: #e4e7ec; --line2: #d0d5dd; --soft: #f3f6f3;
+    --fg: #212121; --head: #101828; --muted: #667085; --sec: #475467; --faint: #98a2b3;
+    --green: #1f512a; --green2: #50890a; --lime: #d2ff1e; --lime-soft: #eaf5dc; --lime-row: #f6ffd6;
+    --blue: #006ac6; --blue-soft: #e3f1fb; --amber: #9a5b00; --amber-soft: #fff1dc; --red: #b42318; --red-soft: #fde8e6;
+    --font: Manrope, "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { margin: 0; font-family: var(--font); color: var(--fg); background: var(--bg); font-size: 14px; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; }
+  [hidden] { display: none !important; }
+  a { color: var(--green); }
+
+  /* ---------- operator view ---------- */
+  .op-top { height: 4px; background: var(--lime); }
+  .op-header { background: var(--card); border-bottom: 1px solid var(--line); padding: 0 32px; height: 72px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 5; }
+  .op-header img { height: 44px; width: auto; display: block; }
+  .vr { width: 1px; height: 32px; background: var(--line); }
+  .title { font-size: 20px; font-weight: 800; color: var(--head); line-height: 24px; }
+  .subtitle { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 16px; }
+  .spacer { flex-grow: 1; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--sec); white-space: nowrap; }
+  .btn { height: 40px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line2); background: var(--card); color: var(--green); font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.primary { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn.amber { color: var(--amber); }
+  .btn.danger { color: var(--red); }
+  .btn.small { height: 32px; padding: 0 12px; font-size: 12px; }
+  .btn.big { height: 56px; width: 100%; justify-content: center; font-size: 18px; font-weight: 800; border-radius: 10px; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--green2); outline-offset: 2px; }
+  main { padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 20px; max-width: 1600px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--head); line-height: 24px; }
+  .hint { font-size: 12px; font-weight: 600; color: var(--muted); line-height: 16px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .row.between { justify-content: space-between; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field label { font-size: 12px; font-weight: 700; color: var(--sec); }
+  .field input, .field select { height: 40px; border: 1px solid var(--line2); border-radius: 8px; padding: 0 12px; background: var(--card); color: var(--fg); font-weight: 600; width: 100%; }
+  .grid3 { display: grid; grid-template-columns: minmax(380px, 1.1fr) minmax(320px, .9fr) minmax(420px, 1.3fr); gap: 20px; }
+  @media (max-width: 1280px) { .grid3 { grid-template-columns: 1fr 1fr; } .grid3 > :last-child { grid-column: 1 / -1; } }
+  @media (max-width: 860px) { .grid3 { grid-template-columns: 1fr; } .op-header { height: auto; padding: 12px 16px; flex-wrap: wrap; } main { padding: 16px; } }
+  .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+  .pill.lime { background: var(--lime); color: var(--green); }
+  .pill.ok { background: var(--lime-soft); color: var(--green); }
+  .pill.grey { background: var(--soft); color: var(--sec); border: 1px solid var(--line); }
+  .pill.blue { background: var(--blue-soft); color: var(--blue); }
+  .pill.amber { background: var(--amber-soft); color: var(--amber); }
+  .pill.red { background: var(--red-soft); color: var(--red); }
+  .filebox { display: flex; align-items: center; gap: 10px; min-height: 44px; border: 1px dashed #b7c2bb; border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--sec); }
+  .filebox .name { flex-grow: 1; min-width: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .filebox input[type=file] { display: none; }
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .stat { padding: 10px 12px; border-radius: 8px; background: var(--soft); display: flex; flex-direction: column; gap: 2px; }
+  .stat .k { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .stat .v { font-size: 20px; font-weight: 800; color: var(--head); line-height: 24px; font-variant-numeric: tabular-nums; }
+  .search { display: flex; align-items: center; gap: 8px; height: 36px; border: 1px solid var(--line2); border-radius: 8px; padding: 0 10px; color: var(--muted); }
+  .search input { flex-grow: 1; border: 0; outline: 0; background: transparent; color: var(--fg); min-width: 0; }
+  .tablewrap { border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: 420px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { position: sticky; top: 0; background: var(--soft); text-align: left; padding: 7px 8px; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; z-index: 1; }
+  td { padding: 0 8px; height: 36px; border-bottom: 1px solid #f0f2f1; white-space: nowrap; }
+  td.ell { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  td.num { font-weight: 800; color: var(--head); font-variant-numeric: tabular-nums; }
+  td.r, th.r { text-align: right; }
+  tr.muted td { color: var(--faint); }
+  tr.muted td.num { color: var(--faint); text-decoration: line-through; }
+  tr.hl td { background: var(--lime-row); }
+  .tfoot { padding: 7px 10px; background: #f9fbf9; border-top: 1px solid var(--line); font-size: 12px; font-weight: 600; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+  .steps { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .step { display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 46px; border-bottom: 1px solid #f0f2f1; }
+  .step:last-child { border-bottom: 0; }
+  .step .n { width: 24px; height: 24px; border-radius: 999px; background: var(--soft); border: 1px solid var(--line2); color: var(--muted); font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step .l { flex-grow: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step .r { font-size: 12px; font-weight: 700; color: var(--head); white-space: nowrap; }
+  .step.done .n { background: var(--green); border-color: var(--green); color: #fff; }
+  .step.current { background: var(--lime-row); }
+  .step.current .n { background: var(--lime); border-color: var(--lime); color: var(--green); }
+  .step.current .l { color: var(--head); font-weight: 800; }
+  .step.current .r { color: var(--blue); }
+  .list { border: 1px solid var(--line); border-radius: 8px; overflow: auto; max-height: 180px; }
+  .list .it { display: flex; align-items: center; gap: 10px; padding: 0 12px; height: 34px; border-bottom: 1px solid #f0f2f1; font-size: 12px; }
+  .list .it:last-child { border-bottom: 0; }
+  .list .it .a { flex-grow: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .list .it .b { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .empty { padding: 14px 12px; font-size: 12px; font-weight: 600; color: var(--faint); }
+  .reveal { border-radius: 12px; background: var(--lime); padding: 22px 28px; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-height: 230px; color: var(--green); position: relative; overflow: hidden; }
+  .reveal.waiting { background: var(--soft); color: var(--sec); border: 1px dashed var(--line2); }
+  .reveal.flag { background: var(--amber-soft); color: var(--amber); }
+  .reveal .k { font-size: 13px; font-weight: 800; letter-spacing: .04em; }
+  .reveal .big { font-size: 64px; font-weight: 800; line-height: 72px; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .reveal .name { font-size: 22px; font-weight: 800; line-height: 28px; }
+  .reveal .d { font-size: 13px; font-weight: 600; opacity: .85; }
+  .reveal.waiting .big { font-size: 28px; line-height: 36px; letter-spacing: 0; color: var(--head); }
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .reason { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .reason select, .reason input { height: 36px; border: 1px solid var(--line2); border-radius: 8px; padding: 0 10px; font-size: 13px; }
+  .reason input { flex-grow: 1; min-width: 160px; }
+  .banner { padding: 10px 14px; border-radius: 8px; background: var(--blue-soft); color: var(--blue); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .banner.warn { background: var(--amber-soft); color: var(--amber); }
+  .banner.err { background: var(--red-soft); color: var(--red); }
+  .toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+  #report { display: none; }
+  .panel { position: fixed; inset: 0; background: rgba(16, 24, 40, .45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .panel-box { background: var(--card); color: var(--fg); border-radius: 12px; width: min(960px, 100%); max-height: 90vh; display: flex; flex-direction: column; gap: 12px; padding: 20px; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .panel-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: var(--head); }
+  .panel-body { overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+  .panel-body textarea { width: 100%; height: 320px; font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; border: 1px solid var(--line2); border-radius: 8px; padding: 10px; resize: vertical; }
+  .panel-body .rep h1 { font-size: 18px; margin: 0 0 4px; color: var(--head); }
+  .panel-body .rep h2 { font-size: 13px; margin: 14px 0 6px; color: var(--head); }
+  .panel-body .rep table { font-size: 12px; }
+  .panel-body .rep th, .panel-body .rep td { border: 1px solid var(--line); padding: 4px 6px; height: auto; white-space: normal; position: static; text-transform: none; letter-spacing: 0; }
+  .panel-body .rep .sig { display: flex; gap: 24px; margin-top: 24px; }
+  .panel-body .rep .sig div { flex: 1; border-top: 1px solid var(--fg); padding-top: 6px; font-size: 11px; }
+  .panel-foot { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ---------- live view ---------- */
+  body.live-mode { background: #0a1a12; color: #fff; overflow: hidden; }
+  .lv-viewport { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #0a1a12; padding: 16px; }
+  .lv-stage { width: 1920px; height: 1080px; flex-shrink: 0; position: relative; overflow: hidden; background: #0a1a12; display: flex; flex-direction: column; transform-origin: center center; }
+  .lv-glow-a { position: absolute; left: -200px; top: -300px; width: 1100px; height: 1100px; border-radius: 999px; background: #1f512a; opacity: .35; pointer-events: none; }
+  .lv-glow-b { position: absolute; right: -300px; bottom: -500px; width: 1000px; height: 1000px; border-radius: 999px; background: #50890a; opacity: .18; pointer-events: none; }
+  .lv-header { height: 112px; flex-shrink: 0; padding: 0 72px; display: flex; align-items: center; gap: 24px; position: relative; }
+  .lv-header img { height: 56px; width: auto; display: block; }
+  .lv-vr { width: 1px; height: 44px; background: #2d5a3a; }
+  .lv-lockup { display: flex; align-items: center; gap: 12px; }
+  .lv-lockup .pu { padding: 4px 12px; border-radius: 6px; background: #d2ff1e; color: #1f512a; font-size: 26px; font-weight: 800; letter-spacing: .04em; }
+  .lv-lockup .rp { font-size: 16px; font-weight: 700; color: #d2ff1e; letter-spacing: .08em; }
+  .lv-live { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #2d5a3a; background: #0f2419; font-size: 15px; font-weight: 700; }
+  .lv-live .dot { width: 10px; height: 10px; border-radius: 999px; background: #ff4d4f; }
+  .lv-main { flex-grow: 1; min-height: 0; padding: 24px 72px 0; display: grid; grid-template-columns: 760px minmax(0, 1fr); gap: 64px; align-items: center; position: relative; }
+  .lv-tumbler { display: flex; flex-direction: column; gap: 28px; align-items: center; }
+  .lv-eyebrow { font-size: 15px; font-weight: 700; color: #b7c2bb; letter-spacing: .14em; }
+  .reels { display: flex; gap: 16px; }
+  .reel { width: 112px; height: 300px; border-radius: 18px; background: #0f2419; border: 1px solid #2d5a3a; position: relative; overflow: hidden; }
+  .strip { position: absolute; left: 0; right: 0; top: 0; will-change: transform; transform: translateY(100px); }
+  .strip.blur { filter: blur(2.5px); }
+  .digit { height: 100px; line-height: 100px; text-align: center; font-size: 108px; font-weight: 800; color: #d2ff1e; font-variant-numeric: tabular-nums; }
+  .shade { position: absolute; left: 0; right: 0; height: 100px; pointer-events: none; }
+  .shade.top { top: 0; background: linear-gradient(to bottom, #0f2419 20%, rgba(15,36,25,.55) 100%); }
+  .shade.bottom { bottom: 0; background: linear-gradient(to top, #0f2419 20%, rgba(15,36,25,.55) 100%); }
+  .window { position: absolute; left: 0; right: 0; top: 86px; height: 128px; border-top: 2px solid #2d5a3a; border-bottom: 2px solid #2d5a3a; pointer-events: none; transition: border-color .25s, box-shadow .25s; }
+  .reel.locked .window { border-color: #d2ff1e; box-shadow: 0 0 28px rgba(210,255,30,.28) inset; }
+  .locks { display: flex; gap: 16px; }
+  .lock { width: 112px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 700; color: #6b8a75; letter-spacing: .08em; transition: color .2s; }
+  .lock.on { color: #d2ff1e; }
+  .lock svg { opacity: 0; transition: opacity .2s; }
+  .lock.on svg { opacity: 1; }
+  .lv-pool { text-align: center; display: flex; flex-direction: column; gap: 6px; }
+  .lv-pool .l1 { font-size: 16px; font-weight: 700; }
+  .lv-pool .l2 { font-size: 14px; font-weight: 600; color: #b7c2bb; }
+  .lv-info { display: flex; flex-direction: column; gap: 28px; min-width: 0; }
+  .lv-now { display: flex; flex-direction: column; gap: 8px; }
+  .lv-now .k { font-size: 16px; font-weight: 700; color: #d2ff1e; letter-spacing: .14em; }
+  .lv-now .t { font-size: 44px; font-weight: 800; line-height: 52px; }
+  .lv-now .s { font-size: 20px; font-weight: 600; color: #b7c2bb; line-height: 28px; }
+  .lv-card { border-radius: 20px; padding: 32px 36px; display: flex; flex-direction: column; gap: 10px; min-height: 250px; justify-content: center; }
+  .lv-card.winner { background: #d2ff1e; color: #1f512a; opacity: 0; transform: translateY(14px); transition: opacity .45s, transform .45s; }
+  .lv-card.winner.show { opacity: 1; transform: none; }
+  .lv-card.winner.flag { background: #3a2a0a; color: #ffd27a; }
+  .lv-card.waiting { border: 1px dashed #2d5a3a; color: #b7c2bb; }
+  .lv-card .k { font-size: 16px; font-weight: 800; letter-spacing: .1em; }
+  .lv-card .name { font-size: 64px; font-weight: 800; line-height: 72px; letter-spacing: -.01em; }
+  .lv-card .d1 { font-size: 24px; font-weight: 700; line-height: 32px; }
+  .lv-card .d2 { font-size: 16px; font-weight: 600; opacity: .8; line-height: 22px; }
+  .lv-card.waiting .name { font-size: 40px; line-height: 48px; color: #fff; }
+  .lv-picks { display: flex; flex-direction: column; gap: 14px; }
+  .lv-picks .k { font-size: 13px; font-weight: 700; color: #b7c2bb; letter-spacing: .12em; }
+  .lv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .lv-cell { padding: 12px 14px; border-radius: 12px; background: #0f2419; border: 1px solid #2d5a3a; display: flex; flex-direction: column; gap: 4px; }
+  .lv-cell .a { font-size: 11px; font-weight: 700; color: #b7c2bb; }
+  .lv-cell .b { font-size: 14px; font-weight: 800; color: #6b8a75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lv-cell.done { background: #1f512a; border-color: #1f512a; }
+  .lv-cell.done .b { color: #fff; }
+  .lv-cell.current { background: #d2ff1e; border-color: #d2ff1e; }
+  .lv-cell.current .a, .lv-cell.current .b { color: #1f512a; }
+  .lv-footer { height: 72px; flex-shrink: 0; padding: 0 72px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #1f3d2a; font-size: 14px; font-weight: 600; color: #b7c2bb; position: relative; }
+  #lv-confetti { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; z-index: 5; }
+  @media (prefers-reduced-motion: reduce) { .strip, .lv-card.winner, .window, .lock, .lv-cell { transition: none !important; } }
+
+  /* ---------- print: the draw report only ---------- */
+  @media print {
+    body { background: #fff; }
+    #operator, #live, #panel { display: none !important; }
+    #report { display: block !important; font-family: var(--font); color: #000; }
+    #report h1 { font-size: 20px; margin: 0 0 4px; }
+    #report h2 { font-size: 14px; margin: 18px 0 6px; }
+    #report table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    #report th, #report td { border: 1px solid #999; padding: 4px 6px; text-align: left; height: auto; white-space: normal; }
+    #report .sig { display: flex; gap: 40px; margin-top: 36px; }
+    #report .sig div { flex: 1; border-top: 1px solid #000; padding-top: 6px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ OPERATOR VIEW -->
+<div id="operator">
+  <div class="op-top"></div>
+  <header class="op-header">
+    <img src="assets/solviva-logo-green.png" alt="Solviva, an AboitizPower company">
+    <div class="vr"></div>
+    <div>
+      <div class="title">Power Up Raffle · Draw tool</div>
+      <div class="subtitle">Operator view · keep this window off the screen share</div>
+    </div>
+    <div class="spacer"></div>
+    <span class="chip" id="op-chip">Draw 1 of 3</span>
+    <button class="btn primary" id="open-live" type="button">Open live view</button>
+    <button class="btn danger" id="reset" type="button">Reset session</button>
+  </header>
+
+  <main>
+    <div id="restored" class="banner" hidden></div>
+    <div id="xlsx-warn" class="banner warn" hidden>The spreadsheet reader did not load (no internet?). Save the list as .csv and load that instead.</div>
+
+    <section class="card">
+      <div class="row between">
+        <h2>Draw details</h2>
+        <span class="hint">Printed on the draw report and stamped on every exported row</span>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="f-draw">Draw</label>
+          <select id="f-draw"><option value="1">Draw 1 of 3</option><option value="2">Draw 2 of 3</option><option value="3">Draw 3 of 3</option></select></div>
+        <div class="field"><label for="f-date">Draw date and time</label><input id="f-date" type="text" placeholder="e.g. 22 Dec 2026, 7:00 PM"></div>
+        <div class="field"><label for="f-dti">DTI representative (witness)</label><input id="f-dti" type="text" placeholder="Name of the DTI representative on the call"></div>
+        <div class="field"><label for="f-permit">DTI Fair Trade Permit No.</label><input id="f-permit" type="text" placeholder="FTEB-XXXXXX Series of 2026"></div>
+        <div class="field"><label for="f-operator">Draw operator</label><input id="f-operator" type="text" placeholder="Your name"></div>
+      </div>
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="f-literal"> Draw from all verified entries and set aside picks that do not qualify (literal reading of the mechanics). Off: draw only from the prize's own pool.</label>
+      </div>
+    </section>
+
+    <div class="grid3">
+      <section class="card" id="entries-card">
+        <div class="row between">
+          <h2>Verified entries</h2>
+          <span class="pill lime" id="entries-count">none loaded</span>
+        </div>
+        <label class="filebox" for="file-entries">
+          <input type="file" id="file-entries" accept=".csv,.xlsx,.xls,text/csv">
+          <span class="name" id="file-entries-name">Load the verified list exported from Odoo (.csv or .xlsx)</span>
+          <span class="btn small">Choose file</span>
+        </label>
+        <div class="row between">
+          <div class="hint" id="file-meta"></div>
+          <button class="btn small" id="load-sample" type="button" title="Loads 312 made-up entries and 3 earlier winners for a demo">Load sample list (demo)</button>
+        </div>
+        <div class="stats" id="stats"></div>
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <label for="search" hidden>Find an entry</label>
+          <input id="search" type="search" placeholder="Find entry no., name, email or phone">
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Entry</th><th>Customer</th><th>City</th><th class="r">kWp</th><th>Status</th></tr></thead>
+            <tbody id="entries-body"></tbody>
+          </table>
+        </div>
+        <div class="tfoot"><span id="entries-foot">No file loaded</span><button class="btn small" id="export-entries" type="button">Export entries with numbers</button></div>
+      </section>
+
+      <section class="card">
+        <div>
+          <h2>Draw sequence</h2>
+          <div class="hint">Fixed by the mechanics · three winners, then one reserve each · reserves are not shown on the live screen</div>
+        </div>
+        <div class="steps" id="steps"></div>
+        <div class="row between">
+          <h2 style="font-size:13px">Already won in earlier draws</h2>
+          <span class="hint">One win per customer for the whole promo</span>
+        </div>
+        <label class="filebox" for="file-prev">
+          <input type="file" id="file-prev" accept=".csv,.xlsx,.xls,text/csv">
+          <span class="name" id="file-prev-name">Optional: load the winners of earlier draws (same columns)</span>
+          <span class="btn small">Choose file</span>
+        </label>
+        <div class="list" id="prev-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="row between">
+          <div>
+            <h2 id="now-title">Now drawing</h2>
+            <div class="hint" id="now-hint">Load the verified list to start</div>
+          </div>
+          <span class="pill grey" id="now-pick">Pick 1 of 6</span>
+        </div>
+        <div class="hint" id="pool-line"></div>
+        <button class="btn primary big" id="draw" type="button" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+          <span>Draw</span>
+        </button>
+        <div class="reveal waiting" id="reveal">
+          <div class="k">READY</div>
+          <div class="big" id="reveal-big">Load the verified list</div>
+          <div class="name" id="reveal-name"></div>
+          <div class="d" id="reveal-d1"></div>
+          <div class="d" id="reveal-d2"></div>
+        </div>
+        <div class="actions" id="actions" hidden>
+          <button class="btn primary" id="confirm" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span id="confirm-label">Confirm · next pick</span>
+          </button>
+          <div class="reason">
+            <select id="reason">
+              <option value="">Set aside because…</option>
+              <option>Already won in an earlier draw</option>
+              <option>Already won tonight</option>
+              <option>Does not qualify for this prize (system size)</option>
+              <option>Contract cancelled or not active</option>
+              <option>Could not be verified</option>
+              <option>Other</option>
+            </select>
+            <input id="reason-note" type="text" placeholder="Note (optional)">
+            <button class="btn amber" id="setaside" type="button">Set aside · draw again</button>
+          </div>
+        </div>
+        <div class="hint">The number is picked first with a cryptographic random source, then the live screen rolls to it. Every pick, confirmation and set-aside is logged with the time.</div>
+      </section>
+    </div>
+
+    <section class="card">
+      <div class="row between">
+        <div>
+          <h2>Draw log</h2>
+          <div class="hint">Every pick in order, including set-asides · export it and keep it as the record of the draw</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="export-log" type="button">Export log (CSV)</button>
+          <button class="btn" id="print" type="button">Print draw report</button>
+        </div>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Pick</th><th>Prize</th><th>Entry</th><th>Customer</th><th>City</th><th class="r">kWp</th><th>Time</th><th>Result</th></tr></thead>
+          <tbody id="log-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============================================================ LIVE VIEW -->
+<div id="live" hidden>
+  <div class="lv-viewport">
+    <div class="lv-stage" id="lv-stage">
+      <div class="lv-glow-a"></div><div class="lv-glow-b"></div>
+      <canvas id="lv-confetti" width="1920" height="1080" aria-hidden="true"></canvas>
+      <header class="lv-header">
+        <img src="assets/solviva-logo-white.png" alt="Solviva, an AboitizPower company">
+        <div class="lv-vr"></div>
+        <div class="lv-lockup"><span class="pu">POWER UP</span><span class="rp">RAFFLE PROMO</span></div>
+        <div class="spacer"></div>
+        <div class="lv-live"><span class="dot"></span><span id="lv-chip">LIVE</span></div>
+      </header>
+      <div class="lv-main">
+        <div class="lv-tumbler">
+          <div class="lv-eyebrow" id="lv-eyebrow">ENTRY NUMBER</div>
+          <div class="reels" id="lv-reels"></div>
+          <div class="locks" id="lv-locks"></div>
+          <div class="lv-pool">
+            <div class="l1" id="lv-pool">Waiting for the draw to start</div>
+            <div class="l2">Digits roll and lock in one at a time, left to right</div>
+          </div>
+        </div>
+        <div class="lv-info">
+          <div class="lv-now">
+            <div class="k" id="lv-now-k">SOLVIVA POWER UP RAFFLE</div>
+            <div class="t" id="lv-now-t">The draw starts shortly</div>
+            <div class="s" id="lv-now-s">Three battery packages tonight · witnessed online by a DTI representative</div>
+          </div>
+          <div class="lv-card waiting" id="lv-waiting">
+            <div class="k" id="lv-wait-k">READY</div>
+            <div class="name" id="lv-wait-name">Waiting for the first draw</div>
+            <div class="d1" id="lv-wait-d1">The number is picked first, then the reels roll to it</div>
+          </div>
+          <div class="lv-card winner" id="lv-winner" hidden>
+            <div class="k" id="lv-win-k">WINNER</div>
+            <div class="name" id="lv-win-name"></div>
+            <div class="d1" id="lv-win-d1"></div>
+            <div class="d2" id="lv-win-d2"></div>
+          </div>
+          <div class="lv-picks">
+            <div class="k">TONIGHT'S WINNERS</div>
+            <div class="lv-grid" id="lv-grid"></div>
+          </div>
+        </div>
+      </div>
+      <footer class="lv-footer">
+        <span id="lv-foot-l">Witnessed online by a DTI representative</span>
+        <span id="lv-foot-r">Per DTI Fair Trade Permit No. FTEB-XXXXXX, Series of 2026</span>
+      </footer>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ PANEL (exports, report) -->
+<div id="panel" class="panel" hidden>
+  <div class="panel-box" role="dialog" aria-labelledby="panel-title">
+    <div class="panel-head"><h2 id="panel-title"></h2><button class="btn small" id="panel-close" type="button">Close</button></div>
+    <div class="panel-body" id="panel-body"></div>
+    <div class="panel-foot" id="panel-foot"></div>
+  </div>
+</div>
+
+<!-- ============================================================ PRINT REPORT -->
+<div id="report"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ------------------------------------------------------------ configuration
+  // Prize names and pool rules come from Mechanics v4. Change here if Marketing changes them (16 vs 20 kWh is still open).
+  var PRIZES = {
+    '5':  { key: '5',  label: '5 kWh',  name: 'Pylontech 5 kWh battery package',  rule: 'systems from 5 to 14.99 kWp' },
+    '16': { key: '16', label: '16 kWh', name: 'Pylontech 16 kWh battery package', rule: 'systems of 15 kWp and above' }
+  };
+  function poolFor(kwp) { if (!(kwp > 0)) return null; if (kwp >= 15) return '16'; if (kwp >= 5) return '5'; return null; }
+  var STEPS = [
+    { id: 1, pool: '5',  kind: 'Winner 1',  sub: 'Winner 1 of 2', live: true },
+    { id: 2, pool: '5',  kind: 'Winner 2',  sub: 'Winner 2 of 2', live: true },
+    { id: 3, pool: '16', kind: 'Winner',    sub: 'Winner',        live: true },
+    { id: 4, pool: '5',  kind: 'Reserve 1', sub: 'Reserve 1 of 2', live: false },
+    { id: 5, pool: '5',  kind: 'Reserve 2', sub: 'Reserve 2 of 2', live: false },
+    { id: 6, pool: '16', kind: 'Reserve',   sub: 'Reserve',        live: false }
+  ];
+  var STORE_KEY = 'powerup-raffle-session-v1';
+  var CHANNEL = 'powerup-raffle';
+
+  // ------------------------------------------------------------ helpers
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmtTime(d) { d = d ? new Date(d) : new Date(); return d.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', second: '2-digit' }); }
+  function fmtKwp(k) { return (k == null || isNaN(k)) ? '' : (Math.round(k * 100) / 100).toFixed(k % 1 === 0 ? 0 : 1); }
+  function digitsOnly(s) { return String(s || '').replace(/\D+/g, ''); }
+  function normPhone(s) { var d = digitsOnly(s); if (d.length === 12 && d.indexOf('63') === 0) d = '0' + d.slice(2); if (d.length === 10 && d.charAt(0) === '9') d = '0' + d; return d; }
+  function normHeader(h) { return String(h || '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+  function fnv1a(str) { var h = 0x811c9dc5; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; }
+  function secureIndex(n) {
+    if (window.crypto && crypto.getRandomValues) {
+      var buf = new Uint32Array(1), max = Math.floor(4294967296 / n) * n, v;
+      do { crypto.getRandomValues(buf); v = buf[0]; } while (v >= max);
+      return v % n;
+    }
+    return Math.floor(Math.random() * n);
+  }
+  function sha256Hex(buf) {
+    if (!(window.crypto && crypto.subtle && crypto.subtle.digest)) return Promise.resolve('');
+    return crypto.subtle.digest('SHA-256', buf).then(function (h) {
+      return Array.prototype.map.call(new Uint8Array(h), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+    }).catch(function () { return ''; });
+  }
+  function initials(name) { var p = String(name || '').trim().split(/\s+/); return p.length > 1 ? p[0].charAt(0) + '. ' + p.slice(1).join(' ') : name; }
+  function csvLine(cells) { return cells.map(function (c) { c = c == null ? '' : String(c); return /[",\r\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(','); }
+  // Saves a file. Inside the claude.ai viewer the page must ask the viewer through the `downloads` capability;
+  // opened as a local file or on a normal web host, a plain download link does the job.
+  function download(name, text) {
+    var blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+    var plain = function () {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    };
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then(function (dl) {
+        if (!dl) { plain(); return; }
+        return dl.save({ filename: name, data: blob }).then(function () { showBanner('info', 'Saved ' + name); }, function (err) {
+          var code = (err && err.code) || 'unavailable';
+          if (code === 'declined') return;
+          showBanner('warn', 'Could not save the file in this viewer (' + code + '). Use Copy to clipboard instead.');
+        });
+      }).catch(plain);
+    } else plain();
+  }
+
+  // RFC 4180-ish CSV parser: quotes, embedded commas and newlines, CRLF.
+  function parseCSV(text) {
+    var rows = [], row = [], field = '', i = 0, q = false, c;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    while (i < text.length) {
+      c = text.charAt(i);
+      if (q) {
+        if (c === '"') { if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; } q = false; i++; continue; }
+        field += c; i++; continue;
+      }
+      if (c === '"') { q = true; i++; continue; }
+      if (c === ',') { row.push(field); field = ''; i++; continue; }
+      if (c === '\r') { i++; continue; }
+      if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+      field += c; i++;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
+  }
+
+  // Column mapping. Two export shapes are accepted:
+  //  - the plain list: Full Name, Street, City, Email, Phone/Mobile, System Size (+ optional Entry No)
+  //  - the Odoo "Promo Participation" export: Reference, Full Name, Street, City, Email, Mobile, Promo Prize, Status, Eligible
+  //    (+ optional Opportunity/System Size (kWp)). Reference is the entry number; Promo Prize gives the pool when there is no kWp.
+  var COLS = {
+    name:     ['fullname', 'name', 'participant'],
+    customer: ['customer', 'customername', 'partner'],
+    firstName: ['firstname'], middleName: ['middlename'], lastName: ['lastname'],
+    draw:     ['drawnumber', 'draw', 'drawno'],
+    drawDate: ['drawdate'],
+    street:   ['street', 'address', 'homeaddress', 'streetaddress'],
+    city:     ['city', 'citymunicipality', 'municipality'],
+    email:    ['email', 'emailaddress', 'emailfrom'],
+    phone:    ['phonemobile', 'phone', 'mobile', 'mobilenumber', 'contactnumber', 'phonenumber'],
+    kwp:      ['systemsize', 'systemsizekwp', 'kwp', 'size', 'systemkwp', 'capacity', 'capacitykwp'],
+    entryNo:  ['reference', 'ref', 'entryno', 'entrynumber', 'entry', 'entryid', 'raffleentry', 'raffleentryno', 'ticket', 'ticketno', 'participationreference'],
+    prize:    ['promoprize', 'prize', 'prizepool', 'pool', 'package'],
+    status:   ['status', 'state', 'participationstatus'],
+    eligible: ['eligible', 'iseligible'],
+    contract: ['contractno', 'contractnumber', 'contract', 'contractid']
+  };
+  function mapColumns(header) {
+    var idx = {}, norm = header.map(normHeader);
+    Object.keys(COLS).forEach(function (k) {
+      idx[k] = -1;
+      for (var a = 0; a < COLS[k].length && idx[k] < 0; a++) { var p = norm.indexOf(COLS[k][a]); if (p >= 0) idx[k] = p; }
+    });
+    // related-field headers such as "Opportunity/System Size (kWp)" or "Promo Prize/Prize"
+    if (idx.kwp < 0) norm.forEach(function (h, i) { if (idx.kwp < 0 && (/systemsize/.test(h) || /kwp$/.test(h))) idx.kwp = i; });
+    if (idx.prize < 0) norm.forEach(function (h, i) { if (idx.prize < 0 && /prize/.test(h)) idx.prize = i; });
+    if (idx.entryNo < 0) norm.forEach(function (h, i) { if (idx.entryNo < 0 && /reference$/.test(h)) idx.entryNo = i; });
+    return idx;
+  }
+  // Prize names as Odoo shows them, e.g. "Pylontech 16kwh Battery (0)" (the number in brackets is the remaining quantity).
+  function poolFromPrize(text) { var t = String(text || '').toLowerCase(); if (!t) return null; if (/\b16\s*kwh/.test(t) || /\b20\s*kwh/.test(t)) return '16'; if (/\b5\s*kwh/.test(t)) return '5'; return null; }
+  function shortCity(c) { var p = String(c || '').split('~'); return p[p.length - 1].trim(); }
+  function fmtDrawDate(v) {
+    var s = String(v == null ? '' : v).trim(); if (!s) return '';
+    var d = /^\d{4}-\d{2}-\d{2}/.test(s) ? new Date(s.slice(0, 10) + 'T00:00:00') : new Date(s);
+    if (isNaN(d.getTime())) return s;
+    return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + d.getFullYear();
+  }
+  function truthy(v) { v = String(v == null ? '' : v).trim().toLowerCase(); return v === 'true' || v === 'yes' || v === '1' || v === 'y' || v === '✓' || v === 'x'; }
+  function rowsToEntries(rows) {
+    if (!rows.length) return { error: 'The file is empty.' };
+    var idx = mapColumns(rows[0]);
+    if (idx.name < 0 && idx.customer < 0 && idx.lastName < 0) return { error: 'No "Full Name", "Customer" or "Last Name" column found. Columns seen: ' + rows[0].join(', ') };
+    var noPool = idx.kwp < 0 && idx.prize < 0;   // the export carries no prize pool at all: rows load, but none can be drawn
+    var entries = [], seen = {}, draws = {}, drawDate = '';
+    for (var r = 1; r < rows.length; r++) {
+      var row = rows[r];
+      var get = function (k) { return idx[k] >= 0 ? String(row[idx[k]] == null ? '' : row[idx[k]]).trim() : ''; };
+      var kwpRaw = get('kwp'), kwp = parseFloat(String(kwpRaw).replace(/[^0-9.]+/g, ''));
+      // Name as entered on the form first, then the Odoo customer, then the name parts.
+      var name = get('name') || get('customer') || [get('firstName'), get('middleName'), get('lastName')].filter(Boolean).join(' ');
+      var drawNo = get('draw').replace(/\.0+$/, '');
+      if (drawNo) draws[drawNo] = (draws[drawNo] || 0) + 1;
+      if (!drawDate && get('drawDate')) drawDate = get('drawDate');
+      var e = {
+        row: r + 1, name: name, street: get('street'), city: get('city'), email: get('email').toLowerCase(),
+        phone: normPhone(get('phone')), phoneRaw: get('phone'), kwpRaw: kwpRaw, kwp: isNaN(kwp) ? null : kwp,
+        entryNo: get('entryNo'), contract: get('contract'), prize: get('prize'), odooStatus: get('status').toLowerCase(),
+        draw: drawNo, status: 'eligible', note: ''
+      };
+      var poolK = poolFor(e.kwp), poolP = poolFromPrize(e.prize);
+      e.pool = poolK || poolP;
+      if (!e.name) { e.status = 'review'; e.note = 'Missing name'; }
+      else if (noPool) { e.status = 'review'; e.note = 'No prize column in the export'; }
+      else if (e.kwp == null && !e.prize) { e.status = 'review'; e.note = idx.kwp >= 0 ? 'Missing system size' : 'Missing prize'; }
+      else if (poolK && poolP && poolK !== poolP) { e.status = 'review'; e.note = 'Prize does not match system size'; }
+      else if (!e.pool) { e.status = 'review'; e.note = e.kwp != null && e.kwp < 5 ? 'Under 5 kWp · no prize pool' : 'Prize not recognised'; }
+      else if (idx.status >= 0 && e.odooStatus === 'winner') { e.status = 'wonbefore'; e.note = 'Status is Winner in Odoo'; }
+      else if (idx.status >= 0 && e.odooStatus !== 'joined') { e.status = 'review'; e.note = 'Not joined · status ' + (e.odooStatus || 'blank'); }
+      else if (idx.eligible >= 0 && !truthy(get('eligible'))) { e.status = 'review'; e.note = 'Not marked eligible in Odoo'; }
+      // With references from Odoo, two rows are duplicates only if they share the reference (two contracts = two entries is allowed).
+      // Without references, identical rows are treated as one.
+      var dupKey = idx.entryNo >= 0 ? 'ref:' + e.entryNo : [e.name.toLowerCase(), e.email, e.phone, e.street.toLowerCase(), e.kwp].join('|');
+      if (e.status === 'eligible' && seen[dupKey]) { e.status = 'duplicate'; e.note = 'Same as row ' + seen[dupKey]; } else if (e.status === 'eligible') seen[dupKey] = e.row;
+      entries.push(e);
+    }
+    var assigned = false, used = {};
+    entries.forEach(function (e) { if (e.entryNo) used[e.entryNo] = true; });
+    entries.forEach(function (e) {
+      if (e.entryNo) return;
+      assigned = true;
+      var n = 100000 + (fnv1a([e.name, e.email, e.phone, e.street, e.kwp].join('|')) % 900000);
+      while (used[String(n)]) { n = 100000 + ((n - 100000 + 7919) % 900000); }
+      e.entryNo = String(n); used[e.entryNo] = true;
+    });
+    return { entries: entries, assigned: assigned, columns: rows[0], noPool: noPool, draws: draws, drawDate: drawDate };
+  }
+  function offDraw(e) { return !!(e.draw && S.details.draw && e.draw !== String(S.details.draw)); }
+  function readFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('Could not read the file.')); };
+      var isSheet = /\.xlsx?$/i.test(file.name);
+      reader.onload = function () {
+        var buf = reader.result;
+        sha256Hex(buf).then(function (hash) {
+          try {
+            var rows;
+            if (isSheet) {
+              if (!window.XLSX) { reject(new Error('Spreadsheet reader not available. Save the file as .csv and load that.')); return; }
+              var wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+              var ws = wb.Sheets[wb.SheetNames[0]];
+              rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+              rows = rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
+            } else {
+              rows = parseCSV(new TextDecoder('utf-8').decode(buf));
+            }
+            resolve({ rows: rows, hash: hash });
+          } catch (err) { reject(err); }
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  // ------------------------------------------------------------ state
+  var S = null;
+  function freshState() {
+    return {
+      details: { draw: '1', date: '', dti: '', permit: '', operator: '', literal: false },
+      file: null, prevFile: null, entries: [], prev: [], stepIdx: 0, log: [], pending: null, startedAt: null
+    };
+  }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable: the session lives in memory only */ } }
+  function load() { try { var raw = localStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+  function keysOf(e) { var k = []; if (e.email) k.push('e:' + e.email); if (e.phone) k.push('p:' + e.phone); if (!k.length && e.name) k.push('n:' + e.name.toLowerCase()); return k; }
+  function wonTonightKeys() { var set = {}; S.entries.forEach(function (e) { if (e.status === 'won') keysOf(e).forEach(function (k) { set[k] = true; }); }); return set; }
+  function prevKeys() { var set = {}; S.prev.forEach(function (p) { keysOf(p).forEach(function (k) { set[k] = true; }); }); return set; }
+  function wonBefore(e, pk) { return keysOf(e).some(function (k) { return pk[k]; }); }
+  function currentStep() { return STEPS[S.stepIdx] || null; }
+  function candidates(step) {
+    var pk = prevKeys(), wk = wonTonightKeys();
+    return S.entries.filter(function (e) {
+      if (e.status !== 'eligible' || offDraw(e)) return false;
+      if (S.details.literal) return true;
+      if (e.pool !== step.pool) return false;
+      if (wonBefore(e, pk)) return false;
+      if (keysOf(e).some(function (k) { return wk[k]; })) return false;
+      return true;
+    });
+  }
+  function flagFor(e, step) {
+    var pk = prevKeys(), wk = wonTonightKeys();
+    if (wonBefore(e, pk)) return 'Already won in an earlier draw';
+    if (keysOf(e).some(function (k) { return wk[k]; })) return 'Already won tonight';
+    if (e.pool !== step.pool) return 'Does not qualify for this prize (system size)';
+    return null;
+  }
+  function poolCount(step) { return S.details.literal ? candidates(step).filter(function (e) { return !flagFor(e, step); }).length : candidates(step).length; }
+
+  // ------------------------------------------------------------ messaging to the live window
+  var bc = null; try { bc = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL) : null; } catch (e) { bc = null; }
+  var liveWin = null, seq = 0;
+  function send(msg) {
+    msg.seq = ++seq; msg.ts = Date.now();
+    try { if (bc) bc.postMessage(msg); } catch (e) { /* ignore */ }
+    try { if (liveWin && !liveWin.closed) liveWin.postMessage(msg, '*'); } catch (e) { /* ignore */ }
+  }
+  function liveState(opts) {
+    var step = currentStep(), complete = !step;
+    var results = STEPS.filter(function (s) { return s.live; }).map(function (s) {
+      var row = S.log.filter(function (l) { return l.stepId === s.id && l.result === 'confirmed'; })[0];
+      return { short: s.id + ' · ' + PRIZES[s.pool].label, name: row ? initials(row.name) : (PRIZES[s.pool].label), done: !!row };
+    });
+    return {
+      type: 'state',
+      details: S.details,
+      complete: complete,
+      step: step ? { idx: S.stepIdx, id: step.id, live: step.live, prize: PRIZES[step.pool].name, label: PRIZES[step.pool].label, sub: step.sub, rule: PRIZES[step.pool].rule } : null,
+      pool: step ? poolCount(step) : 0,
+      total: S.entries.length,
+      results: results,
+      showWaiting: !!(opts && opts.showWaiting),
+      waitingText: opts && opts.waitingText
+    };
+  }
+  function pushState(opts) { send(liveState(opts)); }
+
+  // ------------------------------------------------------------ operator rendering
+  function renderDetails() {
+    $('f-draw').value = S.details.draw; $('f-date').value = S.details.date; $('f-dti').value = S.details.dti;
+    $('f-permit').value = S.details.permit; $('f-operator').value = S.details.operator; $('f-literal').checked = !!S.details.literal;
+    $('op-chip').textContent = 'Draw ' + S.details.draw + ' of 3' + (S.details.date ? ' · ' + S.details.date : '');
+  }
+  function statusPill(e) {
+    switch (e.status) {
+      case 'eligible': return '<span class="pill ok">Eligible</span>';
+      case 'won': return '<span class="pill lime">Won tonight</span>';
+      case 'setaside': return '<span class="pill amber" title="' + esc(e.note) + '">Set aside</span>';
+      case 'wonbefore': return '<span class="pill grey" title="' + esc(e.note) + '">Won earlier</span>';
+      case 'duplicate': return '<span class="pill grey" title="' + esc(e.note) + '">Duplicate</span>';
+      case 'review': return '<span class="pill red" title="' + esc(e.note) + '">Review</span>';
+    }
+    return '';
+  }
+  function renderEntries() {
+    var q = $('search').value.trim().toLowerCase();
+    var pk = prevKeys();
+    var body = $('entries-body'), html = '', shown = 0;
+    var pendingNo = S.pending ? S.pending.entryNo : null;
+    S.entries.forEach(function (e) {
+      if (q && [e.entryNo, e.name, e.email, e.phoneRaw, e.city].join(' ').toLowerCase().indexOf(q) < 0) return;
+      shown++;
+      var before = e.status === 'eligible' && wonBefore(e, pk);
+      var other = e.status === 'eligible' && offDraw(e);
+      var cls = (e.status === 'duplicate' || e.status === 'review' || e.status === 'setaside' || e.status === 'wonbefore' || before || other) ? 'muted' : '';
+      if (e.entryNo === pendingNo) cls += ' hl';
+      var pill = other ? '<span class="pill grey">Draw ' + esc(e.draw) + '</span>' : (before ? '<span class="pill grey">Won earlier</span>' : statusPill(e));
+      html += '<tr class="' + cls + '"><td class="num">' + esc(e.entryNo) + '</td><td class="ell" title="' + esc(e.email) + '">' + esc(e.name) + '</td><td class="ell" title="' + esc(e.city) + '">' + esc(shortCity(e.city)) + '</td><td class="r" title="' + (e.pool ? esc(PRIZES[e.pool].label) + ' pool' : 'no pool') + '">' + (e.kwp != null ? esc(fmtKwp(e.kwp)) : (e.pool ? esc(PRIZES[e.pool].label) : '')) + '</td><td>' + pill + '</td></tr>';
+    });
+    body.innerHTML = html || '<tr><td colspan="5" class="empty">' + (S.entries.length ? 'No match' : 'Load the verified list to see the entries here') + '</td></tr>';
+    $('entries-foot').textContent = S.entries.length ? ('Showing ' + shown + ' of ' + S.entries.length + (S.file ? ' · loaded ' + fmtTime(S.file.loadedAt) : '')) : 'No file loaded';
+    $('entries-count').textContent = S.entries.length ? S.entries.length + ' loaded' : 'none loaded';
+    $('export-entries').disabled = !S.entries.length;
+    // stats
+    var c5 = 0, c16 = 0, rev = 0, dup = 0, before = 0, other = 0;
+    S.entries.forEach(function (e) {
+      if (e.status === 'review') rev++; else if (e.status === 'duplicate') dup++;
+      else if (offDraw(e)) other++;
+      else { if (e.status === 'wonbefore' || wonBefore(e, pk)) before++; else if (e.pool === '5') c5++; else if (e.pool === '16') c16++; }
+    });
+    $('stats').innerHTML = S.entries.length ? (
+      '<div class="stat"><div class="k">5 kWh pool · 5 to 14.99 kWp</div><div class="v">' + c5 + '</div></div>' +
+      '<div class="stat"><div class="k">16 kWh pool · 15 kWp and up</div><div class="v">' + c16 + '</div></div>' +
+      '<div class="stat"><div class="k">Won earlier · excluded</div><div class="v">' + before + '</div></div>' +
+      '<div class="stat"><div class="k">Needs review · excluded</div><div class="v">' + (rev + dup) + '</div></div>' +
+      (other ? '<div class="stat"><div class="k">Other draw · excluded</div><div class="v">' + other + '</div></div>' : '')) : '';
+    $('file-meta').innerHTML = S.file ? ('<span class="mono">' + esc(S.file.rows) + ' rows · SHA-256 ' + esc(S.file.hash ? S.file.hash.slice(0, 16) + '…' : 'unavailable') + '</span>' + (S.file.assigned ? ' · entry numbers were assigned by this tool on load (the file has no Entry No column); export them below and keep that file with the draw record' : ' · entry numbers taken from the file')) : '';
+    $('file-meta').title = S.file && S.file.hash ? 'SHA-256 ' + S.file.hash : '';
+    $('file-entries-name').textContent = S.file ? S.file.name : 'Load the verified list exported from Odoo (.csv or .xlsx)';
+  }
+  function renderSteps() {
+    var html = '';
+    STEPS.forEach(function (s, i) {
+      var row = S.log.filter(function (l) { return l.stepId === s.id && l.result === 'confirmed'; })[0];
+      var cls = i < S.stepIdx ? 'done' : (i === S.stepIdx ? 'current' : '');
+      var right = row ? esc(row.entryNo + ' · ' + initials(row.name)) : (i === S.stepIdx ? (S.pending ? 'Awaiting confirmation' : 'Drawing now') : (i === S.stepIdx + 1 ? 'Next' : ''));
+      html += '<div class="step ' + cls + '"><span class="n">' + (row ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>' : s.id) + '</span><span class="l">' + esc(PRIZES[s.pool].label + ' package · ' + s.kind) + (s.live ? '' : ' · not shown live') + '</span><span class="r">' + right + '</span></div>';
+    });
+    $('steps').innerHTML = html;
+    $('prev-list').innerHTML = S.prev.length ? S.prev.map(function (p) { return '<div class="it"><span class="a">' + esc(p.name) + '</span><span class="b">' + esc(p.note || 'earlier draw') + '</span></div>'; }).join('') : '<div class="empty">No earlier winners loaded. For Draw 1 this stays empty.</div>';
+    $('file-prev-name').textContent = S.prevFile ? S.prevFile.name : 'Optional: load the winners of earlier draws (same columns)';
+  }
+  function renderDraw() {
+    var step = currentStep();
+    var hasList = S.entries.length > 0;
+    if (!step) {
+      $('now-title').textContent = 'Draw complete';
+      $('now-hint').textContent = 'All six picks are logged. Export the log and print the report.';
+      $('now-pick').textContent = 'Done';
+      $('pool-line').textContent = '';
+      $('draw').disabled = true;
+      setReveal('waiting', { k: 'COMPLETE', big: 'Three winners and three reserves are in', name: '', d1: 'Export the log (CSV) and print the draw report for the DTI record.', d2: '' });
+      $('actions').hidden = true;
+      return;
+    }
+    var prize = PRIZES[step.pool];
+    $('now-title').textContent = 'Now drawing · ' + prize.label + ' package · ' + step.kind;
+    $('now-hint').textContent = (step.live ? 'Shown on the live screen' : 'Reserve pick · drawn with the DTI representative, not shown on the live screen') + ' · ' + prize.rule;
+    $('now-pick').textContent = 'Pick ' + step.id + ' of 6';
+    var n = hasList ? poolCount(step) : 0;
+    $('pool-line').textContent = hasList ? ('In the pool for this pick: ' + n + (S.details.literal ? ' qualify of ' + candidates(step).length + ' verified entries in the draw' : ' · ' + prize.rule)) : '';
+    $('draw').disabled = !hasList || !!S.pending || n === 0;
+    if (S.pending) {
+      var p = S.pending, flag = p.flag;
+      setReveal(flag ? 'flag' : 'won', {
+        k: (flag ? 'SET ASIDE · ' + flag : (step.kind.toUpperCase() + ' · ' + prize.name)),
+        big: p.entryNo, name: p.name,
+        d1: [p.kwp != null ? fmtKwp(p.kwp) + ' kWp' : (p.prize || ''), shortCity(p.city), p.email, p.phoneRaw].filter(Boolean).join(' · '),
+        d2: 'Drawn ' + fmtTime(p.at) + (flag ? ' · click Set aside to record it and draw again' : ' · awaiting confirmation')
+      });
+      $('actions').hidden = false;
+      $('confirm').disabled = !!flag;
+      $('confirm-label').textContent = S.stepIdx === STEPS.length - 1 ? 'Confirm · finish' : 'Confirm · next pick';
+      if (flag) { $('reason').value = flag; } else { $('reason').value = ''; }
+      $('reason-note').value = '';
+    } else {
+      setReveal('waiting', { k: 'READY', big: hasList ? ('Press Draw to pick ' + step.kind + ' for the ' + prize.label + ' package') : 'Load the verified list', name: '', d1: hasList ? (n ? n + ' entries in the pool · every entry has the same chance' : 'No eligible entries for this pick') : 'The file from Odoo with Full Name, Street, City, Email, Phone/Mobile and System Size', d2: '' });
+      $('actions').hidden = true;
+    }
+  }
+  function setReveal(mode, t) {
+    var r = $('reveal'); r.className = 'reveal' + (mode === 'waiting' ? ' waiting' : (mode === 'flag' ? ' flag' : ''));
+    r.querySelector('.k').textContent = t.k; $('reveal-big').textContent = t.big; $('reveal-name').textContent = t.name; $('reveal-d1').textContent = t.d1; $('reveal-d2').textContent = t.d2;
+  }
+  function resultPill(l) {
+    if (l.result === 'confirmed') return '<span class="pill ok">' + (l.live ? 'Winner · confirmed' : 'Reserve · recorded') + '</span>';
+    if (l.result === 'setaside') return '<span class="pill amber">Set aside · ' + esc(l.reason) + (l.note ? ' · ' + esc(l.note) : '') + '</span>';
+    return '<span class="pill blue">Awaiting confirmation</span>';
+  }
+  function renderLog() {
+    $('log-body').innerHTML = S.log.length ? S.log.map(function (l) {
+      return '<tr class="' + (l.result === 'setaside' ? 'muted' : '') + '"><td>' + l.stepId + '</td><td>' + esc(l.prize) + '</td><td class="num">' + esc(l.entryNo) + '</td><td>' + esc(l.name) + '</td><td>' + esc(l.city) + '</td><td class="r">' + esc(fmtKwp(l.kwp)) + '</td><td>' + esc(fmtTime(l.at)) + '</td><td>' + resultPill(l) + '</td></tr>';
+    }).join('') : '<tr><td colspan="8" class="empty">No picks yet</td></tr>';
+    $('export-log').disabled = !S.log.length; $('print').disabled = !S.log.length;
+  }
+  function renderAll() { renderDetails(); renderEntries(); renderSteps(); renderDraw(); renderLog(); save(); }
+
+  // ------------------------------------------------------------ operator actions
+  function bindDetails() {
+    ['f-date', 'f-dti', 'f-permit', 'f-operator'].forEach(function (id) {
+      $(id).addEventListener('input', function () { S.details[id.slice(2)] = $(id).value; $('op-chip').textContent = 'Draw ' + S.details.draw + ' of 3' + (S.details.date ? ' · ' + S.details.date : ''); save(); pushState(); });
+    });
+    $('f-draw').addEventListener('change', function () { S.details.draw = $('f-draw').value; renderAll(); pushState(); });
+    $('f-literal').addEventListener('change', function () { S.details.literal = $('f-literal').checked; renderDraw(); save(); pushState(); });
+  }
+  function applyEntries(rows, name, hash) {
+    var parsed = rowsToEntries(rows);
+    if (parsed.error) { showBanner('err', parsed.error); return false; }
+    if (S.log.length) { showBanner('warn', 'The list was replaced while picks were already logged. The log is kept; the new list has ' + parsed.entries.length + ' rows.'); }
+    S.entries = parsed.entries; S.pending = null;
+    S.file = { name: name, rows: parsed.entries.length, hash: hash, loadedAt: Date.now(), assigned: parsed.assigned, columns: parsed.columns, noPool: parsed.noPool };
+    if (!S.startedAt) S.startedAt = Date.now();
+    var drawNos = Object.keys(parsed.draws);
+    if (drawNos.length === 1 && !S.log.length && /^[123]$/.test(drawNos[0]) && String(S.details.draw) !== drawNos[0]) { S.details.draw = drawNos[0]; }
+    if (!S.details.date && parsed.drawDate) S.details.date = fmtDrawDate(parsed.drawDate);
+    if (parsed.noPool) {
+      showBanner('err', 'This export has no "Promo Prize" (or system size) column, so no entry can be placed in a prize pool and nothing can be drawn. In Odoo, export the Promo Participation list again with the field "Promo Prize" added (and "Eligible", if it is used).');
+    } else if (drawNos.length > 1) {
+      showBanner('info', 'The file holds draws ' + drawNos.join(', ') + '. Only rows for Draw ' + S.details.draw + ' (chosen above) are in the pool; the others are marked "Draw N".');
+    }
+    renderAll(); pushState({ showWaiting: true, waitingText: 'Waiting for the first draw' });
+    return true;
+  }
+  function applyPrev(rows, name) {
+    var parsed = rowsToEntries(rows);
+    if (parsed.error) { showBanner('err', parsed.error); return false; }
+    S.prev = parsed.entries.map(function (e) { return { name: e.name, email: e.email, phone: e.phone, note: 'earlier draw' }; });
+    S.prevFile = { name: name, rows: S.prev.length };
+    renderAll(); pushState();
+    return true;
+  }
+  function loadEntries(file) {
+    readFile(file).then(function (res) { applyEntries(res.rows, file.name, res.hash); }).catch(function (err) { showBanner('err', err.message || String(err)); });
+  }
+  function loadPrev(file) {
+    readFile(file).then(function (res) { applyPrev(res.rows, file.name); }).catch(function (err) { showBanner('err', err.message || String(err)); });
+  }
+  function showBannerHtml(kind, html) { var b = $('restored'); b.className = 'banner ' + (kind === 'err' ? 'err' : (kind === 'warn' ? 'warn' : '')); b.innerHTML = '<span>' + html + '</span><button class="btn small" type="button" id="banner-x">Dismiss</button>'; b.hidden = false; $('banner-x').onclick = function () { b.hidden = true; }; }
+  function showBanner(kind, text) { showBannerHtml(kind, esc(text)); }
+
+  function draw() {
+    var step = currentStep(); if (!step || S.pending) return;
+    var pool = candidates(step); if (!pool.length) return;
+    var e = pool[secureIndex(pool.length)];
+    var flag = S.details.literal ? flagFor(e, step) : null;
+    S.pending = { entryNo: e.entryNo, name: e.name, kwp: e.kwp, prize: e.prize, city: e.city, email: e.email, phoneRaw: e.phoneRaw, at: Date.now(), flag: flag };
+    S.log.push({ stepId: step.id, stepIdx: S.stepIdx, prize: PRIZES[step.pool].label + ' package · ' + step.kind, live: step.live, entryNo: e.entryNo, name: e.name, city: e.city, kwp: e.kwp, email: e.email, phone: e.phoneRaw, at: S.pending.at, result: 'pending', reason: '', note: '' });
+    send({ type: 'spin', entryNo: e.entryNo, name: e.name, kwp: e.kwp != null ? fmtKwp(e.kwp) : '', city: shortCity(e.city), hidden: !step.live, flag: flag, kind: step.kind, prize: PRIZES[step.pool].name, label: PRIZES[step.pool].label, pool: poolCount(step) });
+    renderAll();
+  }
+  function confirmPick() {
+    if (!S.pending || S.pending.flag) return;
+    var row = S.log[S.log.length - 1]; row.result = 'confirmed';
+    S.entries.forEach(function (e) { if (e.entryNo === S.pending.entryNo) e.status = 'won'; });
+    S.pending = null; S.stepIdx++;
+    renderAll(); pushState();
+  }
+  function setAside() {
+    if (!S.pending) return;
+    var reason = $('reason').value || S.pending.flag || 'Set aside by the operator';
+    var note = $('reason-note').value.trim();
+    var row = S.log[S.log.length - 1]; row.result = 'setaside'; row.reason = reason; row.note = note;
+    S.entries.forEach(function (e) { if (e.entryNo === S.pending.entryNo) { e.status = 'setaside'; e.note = reason; } });
+    S.pending = null;
+    renderAll(); pushState({ showWaiting: true, waitingText: 'Entry set aside · drawing again' });
+  }
+  function exportLog() {
+    var d = S.details, f = S.file || {};
+    var lines = [csvLine(['Draw', 'Pick', 'Prize', 'Entry No', 'Full Name', 'City', 'System Size (kWp)', 'Email', 'Phone/Mobile', 'Time', 'Result', 'Reason', 'Note', 'Draw date', 'DTI representative', 'Permit No', 'Operator', 'Source file', 'Source SHA-256'])];
+    S.log.forEach(function (l) {
+      lines.push(csvLine(['Draw ' + d.draw, l.stepId, l.prize, l.entryNo, l.name, l.city, fmtKwp(l.kwp), l.email, l.phone, new Date(l.at).toLocaleString('en-PH'), l.result === 'confirmed' ? (l.live ? 'Winner' : 'Reserve') : (l.result === 'setaside' ? 'Set aside' : 'Pending'), l.reason, l.note, d.date, d.dti, d.permit, d.operator, f.name || '', f.hash || '']));
+    });
+    offerCsv('powerup-raffle-draw' + d.draw + '-log-' + stamp() + '.csv', lines.join('\r\n'));
+  }
+  function exportEntries() {
+    var lines = [csvLine(['Entry No', 'Full Name', 'Street', 'City', 'Email', 'Phone/Mobile', 'System Size (kWp)', 'Prize pool', 'Status', 'Note', 'Source row', 'Source file', 'Source SHA-256'])];
+    var pk = prevKeys();
+    S.entries.forEach(function (e) {
+      var st = e.status === 'eligible' && wonBefore(e, pk) ? 'Won earlier' : e.status;
+      if (st === 'eligible' && offDraw(e)) st = 'Other draw (' + e.draw + ')';
+      lines.push(csvLine([e.entryNo, e.name, e.street, e.city, e.email, e.phoneRaw, fmtKwp(e.kwp), e.pool ? PRIZES[e.pool].label : '', st, e.note, e.row, S.file ? S.file.name : '', S.file ? S.file.hash : '']));
+    });
+    offerCsv('powerup-raffle-draw' + S.details.draw + '-entries-' + stamp() + '.csv', lines.join('\r\n'));
+  }
+  // Exports open a panel with Download and Copy. Download works in a normal browser; inside a sandboxed viewer only Copy works.
+  function openPanel(title, bodyHtml, buttons) {
+    $('panel-title').textContent = title; $('panel-body').innerHTML = bodyHtml;
+    var foot = $('panel-foot'); foot.innerHTML = '';
+    buttons.forEach(function (b) { var el = document.createElement('button'); el.type = 'button'; el.className = 'btn' + (b.primary ? ' primary' : ''); el.textContent = b.label; el.addEventListener('click', function () { b.onClick(el); }); foot.appendChild(el); });
+    $('panel').hidden = false;
+  }
+  function closePanel() { $('panel').hidden = true; }
+  function copyText(text, btn) {
+    var ok = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy to clipboard'; }, 1500); };
+    var manual = function () { var ta = $('panel-text'); if (ta) { ta.focus(); ta.select(); } btn.textContent = 'Press Ctrl+C to copy'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, manual); else manual();
+  }
+  function offerCsv(name, text) {
+    var rows = text.split('\r\n').length - 1;
+    openPanel(name, '<div class="hint">' + rows + ' rows. Download the file, or copy the text and paste it into a spreadsheet.</div><textarea id="panel-text" readonly aria-label="CSV contents"></textarea>', [
+      { label: 'Download', primary: true, onClick: function () { download(name, text); } },
+      { label: 'Copy to clipboard', onClick: function (btn) { copyText(text, btn); } },
+      { label: 'Close', onClick: closePanel }
+    ]);
+    $('panel-text').value = text;
+  }
+  function stamp() { var d = new Date(); return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2) + '-' + ('0' + d.getHours()).slice(-2) + ('0' + d.getMinutes()).slice(-2); }
+  function printReport() {
+    var d = S.details, f = S.file || {};
+    var pk = prevKeys();
+    var c5 = 0, c16 = 0, ex = 0; S.entries.forEach(function (e) { if (e.status === 'review' || e.status === 'duplicate' || wonBefore(e, pk)) ex++; else if (e.pool === '5') c5++; else if (e.pool === '16') c16++; });
+    var html = '<h1>Solviva Power Up Raffle Promo · Draw ' + esc(d.draw) + ' of 3 · Draw report</h1>' +
+      '<div>' + esc(d.date) + ' · Per DTI Fair Trade Permit No. ' + esc(d.permit) + '</div>' +
+      '<h2>Draw details</h2><table><tr><th>DTI representative</th><td>' + esc(d.dti) + '</td><th>Draw operator</th><td>' + esc(d.operator) + '</td></tr>' +
+      '<tr><th>Verified list</th><td>' + esc(f.name || '') + '</td><th>SHA-256</th><td style="font-family:monospace">' + esc(f.hash || '') + '</td></tr>' +
+      '<tr><th>Entries loaded</th><td>' + S.entries.length + ' (5 kWh pool ' + c5 + ', 16 kWh pool ' + c16 + ', excluded ' + ex + ')</td><th>Entry numbers</th><td>' + (f.assigned ? 'Assigned by the draw tool on load; see the exported entries file' : 'From the verified list') + '</td></tr>' +
+      '<tr><th>Pool rule</th><td colspan="3">' + (d.literal ? 'All verified entries in the draw; picks that do not qualify are set aside and another is drawn' : 'Each pick is drawn only from entries that qualify for that prize; customers who already won are excluded') + '</td></tr></table>' +
+      '<h2>Picks in order</h2><table><tr><th>Pick</th><th>Prize</th><th>Entry No</th><th>Full Name</th><th>City</th><th>kWp</th><th>Time</th><th>Result</th></tr>' +
+      S.log.map(function (l) { return '<tr><td>' + l.stepId + '</td><td>' + esc(l.prize) + '</td><td>' + esc(l.entryNo) + '</td><td>' + esc(l.name) + '</td><td>' + esc(l.city) + '</td><td>' + esc(fmtKwp(l.kwp)) + '</td><td>' + esc(fmtTime(l.at)) + '</td><td>' + (l.result === 'confirmed' ? (l.live ? 'Winner' : 'Reserve') : (l.result === 'setaside' ? 'Set aside · ' + esc(l.reason) + (l.note ? ' · ' + esc(l.note) : '') : 'Pending')) + '</td></tr>'; }).join('') + '</table>' +
+      '<div class="sig"><div>Draw operator · ' + esc(d.operator) + '</div><div>DTI representative · ' + esc(d.dti) + '</div><div>Date</div></div>';
+    $('report').innerHTML = html;
+    openPanel('Draw report', '<div class="rep">' + html + '</div>', [
+      { label: 'Print', primary: true, onClick: function () { window.print(); } },
+      { label: 'Close', onClick: closePanel }
+    ]);
+  }
+  function openLive() {
+    // Hosted inside the claude.ai viewer the page runs in a frame whose own address cannot be opened directly,
+    // so the build injects the public link and we hand that over instead of calling window.open.
+    if (window.__PUBLIC_URL) {
+      var live = window.__PUBLIC_URL + '#live';
+      showBannerHtml('info', 'Open the live screen in a new tab: <a href="' + esc(live) + '" target="_blank">' + esc(live) + '</a>. In this hosted demo the two tabs are not guaranteed to stay in sync. For the real two-window setup run the downloaded copy, where this button opens the live window directly.');
+      setTimeout(pushState, 800);
+      return;
+    }
+    var url = location.href.split('#')[0] + '#live';
+    try { liveWin = window.open(url, 'powerup-live', 'width=1600,height=900'); } catch (e) { liveWin = null; }
+    if (!liveWin) { showBanner('warn', 'This browser did not open a second window (pop-up blocked?). Open the same file in a new window and add #live to the end of the address. The two windows stay in sync.'); }
+    setTimeout(pushState, 800);
+  }
+  function loadSample() {
+    var base = 'sample/';
+    function get(name) { return fetch(base + name).then(function (r) { if (!r.ok) throw new Error(name + ': ' + r.status); return r.arrayBuffer(); }); }
+    Promise.all([get('verified-entries-sample.csv'), get('previous-winners-sample.csv')]).then(function (bufs) {
+      return sha256Hex(bufs[0]).then(function (hash) {
+        var rows = parseCSV(new TextDecoder('utf-8').decode(bufs[0]));
+        var prev = parseCSV(new TextDecoder('utf-8').decode(bufs[1]));
+        if (applyEntries(rows, 'verified-entries-sample.csv', hash)) applyPrev(prev, 'previous-winners-sample.csv');
+        showBanner('info', 'Sample list loaded: 312 made-up entries and 3 earlier winners. Nothing here is a real customer.');
+      });
+    }).catch(function () { showBanner('warn', 'The sample files are not reachable from here (opened as a local file?). Use Choose file and pick sample/verified-entries-sample.csv instead.'); });
+  }
+  var resetArmed = false;
+  function reset() {
+    if (!resetArmed) { resetArmed = true; $('reset').textContent = 'Click again to clear everything'; setTimeout(function () { resetArmed = false; $('reset').textContent = 'Reset session'; }, 4000); return; }
+    resetArmed = false; $('reset').textContent = 'Reset session';
+    S = freshState(); try { localStorage.removeItem(STORE_KEY); } catch (e) { /* ignore */ }
+    $('file-entries').value = ''; $('file-prev').value = '';
+    renderAll(); pushState({ showWaiting: true, waitingText: 'Waiting for the first draw' });
+  }
+  function bootOperator() {
+    var saved = load();
+    S = saved && saved.entries ? saved : freshState();
+    if (saved && (saved.entries.length || saved.log.length)) {
+      showBanner('info', 'Session restored from this browser: ' + saved.entries.length + ' entries, ' + saved.log.length + ' picks logged. Use Reset session to start over.');
+    }
+    bindDetails();
+    $('file-entries').addEventListener('change', function (ev) { if (ev.target.files[0]) loadEntries(ev.target.files[0]); });
+    $('file-prev').addEventListener('change', function (ev) { if (ev.target.files[0]) loadPrev(ev.target.files[0]); });
+    $('search').addEventListener('input', renderEntries);
+    $('draw').addEventListener('click', draw);
+    $('confirm').addEventListener('click', confirmPick);
+    $('setaside').addEventListener('click', setAside);
+    $('export-log').addEventListener('click', exportLog);
+    $('export-entries').addEventListener('click', exportEntries);
+    $('print').addEventListener('click', printReport);
+    $('open-live').addEventListener('click', openLive);
+    $('reset').addEventListener('click', reset);
+    $('load-sample').addEventListener('click', loadSample);
+    $('panel-close').addEventListener('click', closePanel);
+    $('panel').addEventListener('click', function (ev) { if (ev.target === $('panel')) closePanel(); });
+    if (!window.XLSX) $('xlsx-warn').hidden = false;
+    // the live window asks for the current state when it opens
+    function onReady(msg) { if (msg && msg.type === 'ready') pushState(S.pending ? null : { showWaiting: !S.log.length, waitingText: 'Waiting for the first draw' }); }
+    if (bc) bc.onmessage = function (ev) { onReady(ev.data); };
+    window.addEventListener('message', function (ev) {
+      if (ev.data && ev.data.type === 'ready' && ev.source && ev.source !== window) liveWin = ev.source; // a live window we did not open ourselves
+      onReady(ev.data);
+    });
+    renderAll();
+  }
+
+  // ------------------------------------------------------------ live view
+  var LV = { H: 100, REELS: 6, CYCLES: 40, strips: [], reels: [], locks: [], current: [0, 0, 0, 0, 0, 0], spinning: false, lastKey: '' };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Entry numbers can be plain digits (602377) or an Odoo reference with a prefix (BATTERYPROMO-0017). The reels roll
+  // the trailing digits, always six of them (shorter numbers are padded with leading zeros, longer ones get more reels);
+  // the prefix is shown above the reels.
+  var LV_REELS_MIN = 6;
+  function lvSplit(entryNo) {
+    var raw = String(entryNo || '').trim(), m = raw.match(/^(.*?)(\d+)$/);
+    var prefix = m ? m[1] : '', digits = m ? m[2] : raw.replace(/\D/g, '');
+    var n = Math.min(8, Math.max(LV_REELS_MIN, digits.length || LV_REELS_MIN));
+    while (digits.length < n) digits = '0' + digits;
+    return { prefix: prefix, digits: digits.slice(-n), n: n };
+  }
+  function lvBuildReels(n) {
+    var reelsEl = $('lv-reels'), locksEl = $('lv-locks');
+    reelsEl.innerHTML = ''; locksEl.innerHTML = ''; LV.strips = []; LV.reels = []; LV.locks = []; LV.current = [];
+    LV.REELS = n;
+    for (var r = 0; r < n; r++) {
+      var reel = document.createElement('div'); reel.className = 'reel';
+      var strip = document.createElement('div'); strip.className = 'strip';
+      var frag = document.createDocumentFragment();
+      for (var c = 0; c < LV.CYCLES * 10; c++) { var d = document.createElement('div'); d.className = 'digit'; d.textContent = String(c % 10); frag.appendChild(d); }
+      strip.appendChild(frag);
+      var st = document.createElement('div'); st.className = 'shade top';
+      var sb = document.createElement('div'); sb.className = 'shade bottom';
+      var win = document.createElement('div'); win.className = 'window';
+      reel.appendChild(strip); reel.appendChild(st); reel.appendChild(sb); reel.appendChild(win);
+      reelsEl.appendChild(reel); LV.strips.push(strip); LV.reels.push(reel);
+      var lock = document.createElement('div'); lock.className = 'lock';
+      lock.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg><span>LOCKED</span>';
+      locksEl.appendChild(lock); LV.locks.push(lock);
+      LV.current.push(0); lvSetStatic(r, 0);
+    }
+  }
+  function lvBuild() {
+    lvBuildReels(6);
+    var grid = $('lv-grid');
+    STEPS.filter(function (s) { return s.live; }).forEach(function (s) {
+      var cell = document.createElement('div'); cell.className = 'lv-cell'; cell.innerHTML = '<div class="a"></div><div class="b"></div>';
+      cell.firstChild.textContent = s.id + ' · ' + PRIZES[s.pool].label; cell.lastChild.textContent = PRIZES[s.pool].label; grid.appendChild(cell);
+    });
+  }
+  function lvY(index) { return 'translateY(' + (LV.H - index * LV.H) + 'px)'; }
+  function lvSetStatic(r, digit) { LV.strips[r].style.transition = 'none'; LV.strips[r].style.transform = lvY(10 + digit); LV.current[r] = digit; }
+  function lvShowWaiting(k, name, d1) {
+    var w = $('lv-winner'); w.classList.remove('show'); w.hidden = true;
+    $('lv-wait-k').textContent = k || 'READY'; $('lv-wait-name').textContent = name || ''; $('lv-wait-d1').textContent = d1 || '';
+    $('lv-waiting').hidden = false;
+  }
+  function lvShowWinner(m) {
+    var w = $('lv-winner');
+    w.classList.toggle('flag', !!m.flag);
+    $('lv-win-k').textContent = m.flag ? 'SET ASIDE · ' + m.flag.toUpperCase() : (m.kind.toUpperCase());
+    $('lv-win-name').textContent = m.name;
+    $('lv-win-d1').textContent = ['Entry ' + m.entryNo, m.kwp ? m.kwp + ' kWp' : '', m.city].filter(Boolean).join(' · ');
+    $('lv-win-d2').textContent = m.flag ? 'Another entry will be drawn' : 'Verified entry · ' + m.prize;
+    $('lv-waiting').hidden = true; w.hidden = false; void w.offsetWidth; w.classList.add('show');
+    if (!m.flag) lvConfetti();
+  }
+  // Confetti bursting out of the centre of the stage when a winner is revealed. Plain canvas, brand colours,
+  // skipped when the viewer prefers reduced motion. Lives inside the scaled stage, so it scales with it.
+  var CONF = { ctx: null, parts: [], raf: 0 };
+  function lvConfetti() {
+    if (reduce) return;
+    var c = $('lv-confetti'); if (!c) return;
+    if (!CONF.ctx) CONF.ctx = c.getContext('2d');
+    var colors = ['#d2ff1e', '#d2ff1e', '#ffffff', '#50890a', '#00a7ea', '#eaf5dc'];
+    function burst(n, sMin, sMax) {
+      for (var i = 0; i < n; i++) {
+        var a = Math.random() * Math.PI * 2, s = sMin + Math.random() * (sMax - sMin);
+        CONF.parts.push({
+          x: 960, y: 540, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 7, g: 0.32 + Math.random() * 0.14, drag: 0.986,
+          w: 8 + Math.random() * 10, h: 5 + Math.random() * 6, rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3,
+          color: colors[Math.floor(Math.random() * colors.length)], life: 0, ttl: 170 + Math.random() * 70,
+          shape: Math.random() < 0.3 ? 'dot' : 'strip'
+        });
+      }
+    }
+    burst(260, 10, 26);
+    setTimeout(function () { burst(140, 6, 18); }, 220);
+    function step() {
+      var ctx = CONF.ctx, alive = [];
+      ctx.clearRect(0, 0, 1920, 1080);
+      for (var i = 0; i < CONF.parts.length; i++) {
+        var p = CONF.parts[i]; p.life++;
+        p.vx *= p.drag; p.vy = p.vy * p.drag + p.g; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        if (p.life >= p.ttl || p.y > 1120) continue;
+        var fade = p.life > p.ttl - 40 ? Math.max(0, (p.ttl - p.life) / 40) : 1;
+        ctx.save(); ctx.globalAlpha = fade; ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
+        if (p.shape === 'dot') { ctx.beginPath(); ctx.arc(0, 0, p.w / 2.6, 0, Math.PI * 2); ctx.fill(); }
+        else { var hh = p.h * (0.55 + 0.45 * Math.abs(Math.cos(p.life / 7))); ctx.fillRect(-p.w / 2, -hh / 2, p.w, hh); }
+        ctx.restore();
+        alive.push(p);
+      }
+      CONF.parts = alive;
+      if (alive.length) CONF.raf = requestAnimationFrame(step); else { CONF.raf = 0; ctx.clearRect(0, 0, 1920, 1080); }
+    }
+    if (!CONF.raf) CONF.raf = requestAnimationFrame(step);
+  }
+  function lvSpin(m) {
+    if (LV.spinning) return;
+    LV.spinning = true;
+    var split = lvSplit(m.entryNo);
+    if (split.n !== LV.REELS) lvBuildReels(split.n);
+    $('lv-eyebrow').textContent = 'ENTRY NUMBER' + (split.prefix ? ' · ' + split.prefix.toUpperCase() : '');
+    lvShowWaiting('DRAWING', 'Rolling…', m.prize);
+    for (var r = 0; r < LV.REELS; r++) { LV.reels[r].classList.remove('locked'); LV.locks[r].classList.remove('on'); }
+    var digits = split.digits.split('').map(Number);
+    var finished = 0;
+    for (var i = 0; i < LV.REELS; i++) (function (r) {
+      var strip = LV.strips[r];
+      lvSetStatic(r, LV.current[r]); void strip.offsetHeight;
+      var dur = reduce ? 0.25 : 1.6 + r * 0.5, cycles = reduce ? 1 : 6 + r * 3, target = cycles * 10 + digits[r];
+      if (!reduce) strip.classList.add('blur');
+      strip.style.transition = 'transform ' + dur + 's cubic-bezier(0.16, 0.84, 0.22, 1)';
+      strip.style.transform = lvY(target);
+      var ended = false;
+      function land() {
+        if (ended) return; ended = true;
+        strip.classList.remove('blur'); lvSetStatic(r, digits[r]);
+        LV.reels[r].classList.add('locked'); LV.locks[r].classList.add('on');
+        if (++finished === LV.REELS) { LV.spinning = false; lvShowWinner(m); }
+      }
+      strip.addEventListener('transitionend', land, { once: true });
+      setTimeout(land, dur * 1000 + 120);
+    })(i);
+  }
+  function lvState(m) {
+    var d = m.details || {};
+    $('lv-chip').textContent = 'LIVE · Draw ' + (d.draw || '1') + ' of 3' + (d.date ? ' · ' + d.date : '');
+    $('lv-foot-r').textContent = 'Per DTI Fair Trade Permit No. ' + (d.permit || 'FTEB-XXXXXX, Series of 2026');
+    $('lv-foot-l').textContent = 'Witnessed online by a DTI representative' + (m.total ? ' · ' + m.total + ' verified entries loaded from Solviva\'s customer records' : '');
+    var cells = $('lv-grid').children;
+    (m.results || []).forEach(function (res, i) { if (!cells[i]) return; cells[i].className = 'lv-cell' + (res.done ? ' done' : (m.step && m.step.live && m.step.idx === i ? ' current' : '')); cells[i].lastChild.textContent = res.name; });
+    if (m.complete) {
+      $('lv-now-k').textContent = 'DRAW COMPLETE'; $('lv-now-t').textContent = 'All three winners are in'; $('lv-now-s').textContent = 'Thank you for joining tonight\'s draw';
+      $('lv-pool').textContent = 'Draw closed';
+      return;
+    }
+    if (!m.step) return;
+    if (m.step.live) {
+      $('lv-now-k').textContent = 'NOW DRAWING · PICK ' + m.step.id + ' OF 3';
+      $('lv-now-t').textContent = m.step.prize;
+      $('lv-now-s').textContent = m.step.sub + ' · ' + m.step.rule;
+      $('lv-pool').textContent = m.step.label + ' pool · ' + m.pool + ' entries · every entry has the same chance';
+    } else {
+      $('lv-now-k').textContent = 'RESERVE PICKS';
+      $('lv-now-t').textContent = 'Drawing the reserve winners';
+      $('lv-now-s').textContent = 'Witnessed by the DTI representative · reserve names are recorded, not announced';
+      $('lv-pool').textContent = 'Reserve picks in progress';
+      lvShowWaiting('RESERVES', 'Three winners are in', 'One reserve per prize is drawn now and kept on record in case a winner forfeits');
+      return;
+    }
+    if (m.showWaiting) lvShowWaiting('READY', m.waitingText || 'Waiting for the next draw', 'The number is picked first, then the reels roll to it');
+  }
+  function lvOnMessage(msg) {
+    if (!msg || !msg.type) return;
+    var key = msg.ts + ':' + msg.seq; if (key === LV.lastKey) return; LV.lastKey = key;
+    if (msg.type === 'state') lvState(msg);
+    else if (msg.type === 'spin') { if (msg.hidden) { lvShowWaiting('RESERVES', 'Drawing a reserve winner', 'Recorded with the DTI representative · not announced'); } else lvSpin(msg); }
+  }
+  function lvFit() { var st = $('lv-stage'), w = window.innerWidth - 32, h = window.innerHeight - 32; st.style.transform = 'scale(' + Math.min(w / 1920, h / 1080, 1.5) + ')'; }
+  function bootLive() {
+    document.body.classList.add('live-mode');
+    $('operator').hidden = true; $('live').hidden = false;
+    lvBuild(); lvFit(); window.addEventListener('resize', lvFit);
+    if (bc) bc.onmessage = function (ev) { lvOnMessage(ev.data); };
+    window.addEventListener('message', function (ev) { lvOnMessage(ev.data); });
+    var hello = { type: 'ready' };
+    try { if (bc) bc.postMessage(hello); } catch (e) { /* ignore */ }
+    try { if (window.opener) window.opener.postMessage(hello, '*'); } catch (e) { /* ignore */ }
+    document.title = 'Power Up Raffle · Live';
+  }
+
+  // ------------------------------------------------------------ boot
+  if (location.hash === '#live') bootLive(); else bootOperator();
+
+  // Test hook: lets an automated check drive the operator logic without a file dialog. Not used by the UI.
+  window.__raffle = { parseCSV: parseCSV, rowsToEntries: rowsToEntries, applyEntries: applyEntries, applyPrev: applyPrev, draw: draw, confirm: confirmPick, setAside: setAside, candidates: candidates, flagFor: flagFor, poolCount: poolCount, currentStep: currentStep, state: function () { return S; }, STEPS: STEPS, lvSplit: lvSplit, mapColumns: mapColumns, lvShowWinner: lvShowWinner, lvConfetti: lvConfetti };
+})();
+</script>
+</body>
+</html>

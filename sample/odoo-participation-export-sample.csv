@@ -1,0 +1,61 @@
+Reference,Full Name,Street,City,Email,Mobile,Promo Prize,Status,Eligible,Winner Type,Opportunity/System Size (kWp)
+PWRUP-0001,Mark Lim,123 Camia St,San Fernando,mark.lim1@example.com,0921 629 4522,16 kWh Battery Package,Joined,True,Priority,20.8
+PWRUP-0002,Noel Cruz,169 Maharlika Hwy,Taguig,noel.cruz2@example.com,0931 448 3671,5 kWh Battery Package,Joined,True,Priority,13.3
+PWRUP-0003,Ramon Tan,239 Rizal Ave,Las Pinas,ramon.tan3@example.com,0939 729 3873,5 kWh Battery Package,Invited,True,Priority,
+PWRUP-0004,Joy Salazar,218 Acacia Lane,Las Pinas,joy.salazar4@example.com,0970 952 6217,5 kWh Battery Package,Joined,True,Priority,13.8
+PWRUP-0005,Ana Salazar,10 Mabini St,San Fernando,ana.salazar5@example.com,0913 679 1064,16 kWh Battery Package,Joined,True,Priority,16.8
+PWRUP-0006,Ana Navarro,247 Lawin St,Taguig,ana.navarro6@example.com,0975 581 7967,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0007,Jun Fernandez,18 Mabini St,Pasig,jun.fernandez7@example.com,0982 665 1716,16 kWh Battery Package,Joined,False,Priority,28.5
+PWRUP-0008,Mia Gonzales,134 Maharlika Hwy,Davao City,mia.gonzales8@example.com,0974 407 4068,5 kWh Battery Package,Joined,True,Priority,11.4
+PWRUP-0009,Allan Diaz,11 Camia St,Las Pinas,allan.diaz9@example.com,0969 207 2470,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0010,Jen Torres,17 Ilang-Ilang St,Antipolo,jen.torres10@example.com,0960 899 3338,5 kWh Battery Package,Joined,True,Priority,5.9
+PWRUP-0011,Jun Santos,97 Narra St,Quezon City,jun.santos11@example.com,0964 192 4050,5 kWh Battery Package,Invited,True,Priority,4.5
+PWRUP-0012,Grace Garcia,130 Sampaguita St,Cainta,grace.garcia12@example.com,0945 761 4361,16 kWh Battery Package,Joined,True,Priority,
+PWRUP-0013,Noel Ramos,196 Acacia Lane,Davao City,noel.ramos13@example.com,0921 354 6552,5 kWh Battery Package,Joined,True,Priority,13.9
+PWRUP-0014,Jun Torres,132 Dama de Noche St,Bacoor,jun.torres14@example.com,0957 349 5507,5 kWh Battery Package,Joined,True,Priority,13.8
+PWRUP-0015,Ramon Torres,91 Sampaguita St,Bacoor,ramon.torres15@example.com,0950 516 4986,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0016,Grace Villanueva,19 Yakal St,Antipolo,grace.villanueva16@example.com,0965 848 1957,16 kWh Battery Package,Joined,True,Priority,23.2
+PWRUP-0017,Karen Bautista,129 Narra St,San Fernando,karen.bautista17@example.com,0933 302 6427,5 kWh Battery Package,Joined,True,Priority,6.4
+PWRUP-0018,Faye Mendoza,144 Yakal St,Pasig,faye.mendoza18@example.com,0957 817 8178,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0019,Ana Lim,184 Molave St,Las Pinas,ana.lim19@example.com,0962 262 2057,5 kWh Battery Package,Joined,True,Priority,13.9
+PWRUP-0020,Luz Dela Cruz,125 Narra St,Cebu City,luz.delacruz20@example.com,0924 289 6865,16 kWh Battery Package,Winner,True,Priority,28.0
+PWRUP-0021,Cathy Villanueva,127 Dama de Noche St,Bacoor,cathy.villanueva21@example.com,0980 102 8727,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0022,Ben Pascual,195 Ilang-Ilang St,Antipolo,ben.pascual22@example.com,0942 524 8515,5 kWh Battery Package,Joined,True,Priority,14.6
+PWRUP-0023,Liza Ocampo,169 Lawin St,Cainta,liza.ocampo23@example.com,0984 899 2068,16 kWh Battery Package,Joined,True,Priority,20.4
+PWRUP-0024,Mark Aquino,135 Maharlika Hwy,Cainta,mark.aquino24@example.com,0972 814 3131,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0025,Mark Ramos,69 Molave St,Las Pinas,mark.ramos25@example.com,0983 814 2038,16 kWh Battery Package,Joined,True,Priority,14.6
+PWRUP-0026,Jen Castillo,22 Ilang-Ilang St,Davao City,jen.castillo26@example.com,0965 430 3688,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0027,Mark Mercado,190 Camia St,Las Pinas,mark.mercado27@example.com,0961 533 6098,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0028,Edwin Diaz,149 Acacia Lane,Antipolo,edwin.diaz28@example.com,0938 597 1652,5 kWh Battery Package,Joined,True,Priority,10.9
+PWRUP-0029,Jun Mercado,80 Maharlika Hwy,Paranaque,jun.mercado29@example.com,0989 833 6593,5 kWh Battery Package,Joined,True,Priority,12.1
+PWRUP-0030,Ana Dela Cruz,2 Dama de Noche St,Cainta,ana.delacruz30@example.com,0952 560 7061,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0031,Nico Fernandez,54 Narra St,Taguig,nico.fernandez31@example.com,0952 126 6913,5 kWh Battery Package,Joined,True,Priority,10.3
+PWRUP-0032,Bea Ocampo,17 Acacia Lane,Taguig,bea.ocampo32@example.com,0977 341 8796,5 kWh Battery Package,Joined,True,Priority,5.9
+PWRUP-0033,Grace Mendoza,109 Lawin St,Cebu City,grace.mendoza33@example.com,0932 649 6282,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0034,Edwin Navarro,21 Acacia Lane,Malolos,edwin.navarro34@example.com,0957 339 6169,5 kWh Battery Package,Joined,True,Priority,13.4
+PWRUP-0035,Karen Mercado,181 Rizal Ave,Malolos,karen.mercado35@example.com,0987 577 1819,16 kWh Battery Package,Joined,True,Priority,20.0
+PWRUP-0036,Karen Diaz,69 Yakal St,Taguig,karen.diaz36@example.com,0921 469 3324,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0037,Liza Cruz,240 Rizal Ave,Pasig,liza.cruz37@example.com,0945 108 5097,5 kWh Battery Package,Joined,True,Priority,8.7
+PWRUP-0038,Nico Villanueva,164 Maharlika Hwy,Las Pinas,nico.villanueva38@example.com,0940 954 4976,5 kWh Battery Package,Joined,True,Priority,7.2
+PWRUP-0039,Rico Bautista,225 Narra St,Santa Rosa,rico.bautista39@example.com,0916 970 5559,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0040,Jen Fernandez,139 Yakal St,Taguig,jen.fernandez40@example.com,0950 608 4789,5 kWh Battery Package,Joined,True,Priority,10.4
+PWRUP-0041,Jen Fernandez,139 Yakal St,Taguig,jen.fernandez40@example.com,0950 608 4789,5 kWh Battery Package,Joined,True,Priority,10.4
+PWRUP-0042,Joy Flores,166 Maharlika Hwy,Bacoor,joy.flores42@example.com,0989 835 5181,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0043,Grace Garcia,38 Acacia Lane,Malolos,grace.garcia43@example.com,0971 309 8773,5 kWh Battery Package,Joined,True,Priority,7.8
+PWRUP-0044,Paolo Ocampo,196 Camia St,Paranaque,paolo.ocampo44@example.com,0937 622 3072,5 kWh Battery Package,Joined,True,Priority,8.9
+PWRUP-0045,Faye Dela Cruz,10 Rizal Ave,Santa Rosa,faye.delacruz45@example.com,0916 411 9350,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0046,Rico Santos,79 Narra St,Quezon City,rico.santos46@example.com,0936 535 6976,5 kWh Battery Package,Joined,True,Priority,14.4
+PWRUP-0047,Luz Diaz,97 Maharlika Hwy,Cainta,luz.diaz47@example.com,0987 386 1899,5 kWh Battery Package,Joined,True,Priority,8.8
+PWRUP-0048,Noel Gonzales,21 Mabini St,Malolos,noel.gonzales48@example.com,0915 884 5458,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0049,Noel Lim,188 Molave St,Paranaque,noel.lim49@example.com,0944 961 7112,5 kWh Battery Package,Joined,True,Priority,5.1
+PWRUP-0050,Jen Garcia,170 Mabini St,Antipolo,jen.garcia50@example.com,0912 111 3259,16 kWh Battery Package,Joined,True,Priority,25.5
+PWRUP-0051,Bea Santos,105 Acacia Lane,Cainta,bea.santos51@example.com,0934 908 6914,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0052,Mia Lim,70 Lawin St,Lipa,mia.lim52@example.com,0937 758 5657,5 kWh Battery Package,Joined,True,Priority,10.8
+PWRUP-0053,Luz Villanueva,186 Acacia Lane,Malolos,luz.villanueva53@example.com,0962 375 9494,5 kWh Battery Package,Joined,True,Priority,8.8
+PWRUP-0054,Carlo Ramos,15 Lawin St,Pasig,carlo.ramos54@example.com,0917 580 6362,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0055,Dennis Santos,184 Sampaguita St,Las Pinas,dennis.santos55@example.com,0948 864 2167,16 kWh Battery Package,Joined,True,Priority,24.4
+PWRUP-0056,Nico Flores,46 Lawin St,Davao City,nico.flores56@example.com,0948 106 3826,16 kWh Battery Package,Joined,True,Priority,29.3
+PWRUP-0057,Jen Garcia,17 Camia St,Lipa,jen.garcia57@example.com,0940 853 5938,5 kWh Battery Package,Joined,True,Priority,
+PWRUP-0058,Ramon Ramos,103 Mabini St,Cainta,ramon.ramos58@example.com,0990 228 1193,5 kWh Battery Package,Joined,True,Priority,10.4
+PWRUP-0059,Luz Gonzales,130 Molave St,Taguig,luz.gonzales59@example.com,0967 126 1019,5 kWh Battery Package,Joined,True,Priority,10.6
+PWRUP-0060,Maria Dela Cruz,26 Molave St,Lipa,maria.delacruz60@example.com,0912 325 3666,5 kWh Battery Package,Joined,True,Priority,
